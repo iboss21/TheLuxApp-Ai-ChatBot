@@ -49,7 +49,7 @@ authRouter.post('/token', async (req: Request, res: Response, next: NextFunction
       const token = jwt.sign(
         { sub: user.id, tid: user.tenant_id, role: user.role },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn as any }
+        { expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'] }
       );
 
       res.json({
