@@ -1,0 +1,765 @@
+openapi: 3.0.3
+info:
+  title: TheLuxApp AI ChatBot API
+  version: 1.0.0
+  description: |
+    Enterprise AI chatbot platform API. Multi-tenant, multi-model, with RAG,
+    tool execution, memory, and platform integrations (Discord, Slack, Telegram,
+    Teams, WhatsApp, web embed).
+
+    **Authentication:**
+    - `Bearer <JWT>` — from `POST /auth/token`
+    - `ApiKey <key>` — from `POST /auth/api-keys` (requires `X-Tenant-ID` header)
+
+  contact:
+    name: TheLuxApp GitHub
+    url: https://github.com/iboss21/TheLuxApp-Ai-ChatBot
+  license:
+    name: MIT
+
+servers:
+  - url: https://your-domain.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Chat
+  - name: Knowledge
+  - name: Tools
+  - name: Memory
+  - name: Admin
+  - name: Platform
+  - name: Integrations
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Format: `ApiKey lux_xxxxxxxx`"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:    { type: string }
+            message: { type: string }
+
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:    { type: string, enum: [user, assistant, system] }
+        content: { type: string, minLength: 1 }
+
+    Citation:
+      type: object
+      properties:
+        doc_id:  { type: string }
+        title:   { type: string }
+        url:     { type: string, nullable: true }
+        snippet: { type: string }
+
+    ToolCall:
+      type: object
+      properties:
+        id:        { type: string }
+        name:      { type: string }
+        arguments: { type: object }
+        result:    {}
+
+    Conversation:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        channel:       { type: string }
+        status:        { type: string }
+        created_at:    { type: string, format: date-time }
+        updated_at:    { type: string, format: date-time }
+
+    Integration:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        platform:   { type: string, enum: [discord, slack, telegram, teams, whatsapp] }
+        name:       { type: string }
+        enabled:    { type: boolean }
+        created_at: { type: string, format: date-time }
+
+security:
+  - BearerAuth: []
+
+# ════════════════════════════════════════════════════════════════════════════
+paths:
+
+  # ── AUTH ──────────────────────────────────────────────────────────────────
+
+  /auth/token:
+    post:
+      tags: [Auth]
+      summary: Get a JWT access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grant_type, tenant_id]
+              properties:
+                grant_type: { type: string, enum: [password, client_credentials] }
+                username:   { type: string }
+                password:   { type: string }
+                tenant_id:  { type: string, format: uuid }
+            example:
+              grant_type: password
+              username: admin@example.com
+              password: secret
+              tenant_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type:   { type: string }
+                  expires_in:   { type: integer }
+
+  /auth/api-keys:
+    post:
+      tags: [Auth]
+      summary: Create an API key (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:       { type: string }
+                scopes:     { type: array, items: { type: string } }
+                expires_at: { type: string, format: date-time }
+      responses:
+        "201":
+          description: API key created (shown once — store securely)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:         { type: string, format: uuid }
+                  name:       { type: string }
+                  key:        { type: string, description: "Full key — shown once only" }
+                  scopes:     { type: array, items: { type: string } }
+                  created_at: { type: string }
+
+  /auth/api-keys/{id}:
+    delete:
+      tags: [Auth]
+      summary: Revoke an API key (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Revoked }
+
+  # ── CHAT ──────────────────────────────────────────────────────────────────
+
+  /v1/chat/completions:
+    post:
+      tags: [Chat]
+      summary: Send a message and receive an AI response
+      description: |
+        Core chat endpoint. Supports streaming via SSE (`stream: true`).
+
+        **Streaming events:**
+        - `{"type":"citation", ...}`
+        - `{"type":"token", "content":"..."}`
+        - `{"type":"tool_call", ...}`
+        - `{"type":"done", "usage": {...}}`
+        - `{"type":"error", ...}`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages]
+              properties:
+                conversation_id:   { type: string, format: uuid }
+                messages:
+                  type: array
+                  items: { $ref: "#/components/schemas/ChatMessage" }
+                stream:            { type: boolean, default: false }
+                tools_enabled:     { type: boolean, default: true }
+                knowledge_enabled: { type: boolean, default: true }
+                model:             { type: string }
+                provider:          { type: string, enum: [openai, anthropic, azure] }
+                max_tokens:        { type: integer }
+                temperature:       { type: number, minimum: 0, maximum: 2 }
+            example:
+              messages: [{ role: user, content: "What is our refund policy?" }]
+              stream: false
+              tools_enabled: true
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:              { type: string }
+                  conversation_id: { type: string, format: uuid }
+                  content:         { type: string }
+                  citations:       { type: array, items: { $ref: "#/components/schemas/Citation" } }
+                  tool_calls:      { type: array, items: { $ref: "#/components/schemas/ToolCall" } }
+                  model:           { type: string }
+                  usage:
+                    type: object
+                    properties:
+                      input_tokens:  { type: integer }
+                      output_tokens: { type: integer }
+                  safety_flags:    { type: object }
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE stream when stream=true
+
+  /v1/conversations:
+    post:
+      tags: [Chat]
+      summary: Create a new conversation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel:  { type: string, enum: [web, slack, teams, api, mobile] }
+                metadata: { type: object }
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Conversation" }
+
+    get:
+      tags: [Chat]
+      summary: List conversations (paginated)
+      parameters:
+        - { name: limit,  in: query, schema: { type: integer, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations: { type: array, items: { $ref: "#/components/schemas/Conversation" } }
+                  limit:  { type: integer }
+                  offset: { type: integer }
+
+  /v1/conversations/{id}:
+    get:
+      tags: [Chat]
+      summary: Get a conversation with all messages
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Conversation with messages }
+
+    delete:
+      tags: [Chat]
+      summary: Archive a conversation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Archived }
+
+  /v1/conversations/{id}/escalate:
+    post:
+      tags: [Chat]
+      summary: Escalate conversation to a human agent
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        "200": { description: Escalated }
+
+  # ── KNOWLEDGE ─────────────────────────────────────────────────────────────
+
+  /v1/knowledge/sources:
+    post:
+      tags: [Knowledge]
+      summary: Register a knowledge source
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, source_type, connection_config]
+              properties:
+                name:              { type: string }
+                source_type:       { type: string }
+                connection_config: { type: object }
+                acl_mode:          { type: string, enum: [public, rbac, abac] }
+                sync_schedule:     { type: string }
+      responses:
+        "201": { description: Source registered }
+
+    get:
+      tags: [Knowledge]
+      summary: List knowledge sources
+      responses:
+        "200": { description: Sources list }
+
+  /v1/knowledge/search:
+    post:
+      tags: [Knowledge]
+      summary: Direct semantic search (for debugging/admin)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:       { type: string }
+                top_k:       { type: integer, default: 5 }
+                user_groups: { type: array, items: { type: string } }
+      responses:
+        "200": { description: Search results with embeddings }
+
+  /v1/knowledge/upload:
+    post:
+      tags: [Knowledge]
+      summary: Upload a document directly
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:     { type: string, format: binary }
+                metadata: { type: string }
+      responses:
+        "200": { description: Document uploaded and indexed }
+
+  # ── TOOLS ─────────────────────────────────────────────────────────────────
+
+  /v1/tools:
+    post:
+      tags: [Tools]
+      summary: Register a tool
+      responses:
+        "201": { description: Tool registered }
+    get:
+      tags: [Tools]
+      summary: List tools for the tenant
+      responses:
+        "200": { description: Tool list }
+
+  /v1/tools/{id}:
+    put:
+      tags: [Tools]
+      summary: Update a tool
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Tools]
+      summary: Remove a tool
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+
+  /v1/tools/executions/{id}/confirm:
+    post:
+      tags: [Tools]
+      summary: Confirm a high-risk tool execution
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Execution confirmed and run }
+
+  # ── MEMORY ────────────────────────────────────────────────────────────────
+
+  /v1/memory:
+    get:
+      tags: [Memory]
+      summary: List user's stored memories
+      responses:
+        "200": { description: Memory entries }
+    delete:
+      tags: [Memory]
+      summary: Delete ALL user memories (GDPR erasure)
+      responses:
+        "204": { description: All memories erased }
+
+  /v1/memory/{id}:
+    put:
+      tags: [Memory]
+      summary: Update a memory entry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Memory]
+      summary: Delete a memory entry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+
+  # ── INTEGRATIONS ──────────────────────────────────────────────────────────
+
+  /v1/integrations/manage:
+    get:
+      tags: [Integrations]
+      summary: List platform integrations (admin)
+      responses:
+        "200":
+          description: Integration list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  integrations:
+                    type: array
+                    items: { $ref: "#/components/schemas/Integration" }
+
+    post:
+      tags: [Integrations]
+      summary: Register a platform integration (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, name]
+              properties:
+                platform:    { type: string, enum: [discord, slack, telegram, teams, whatsapp] }
+                name:        { type: string }
+                config:      { type: object, description: "Platform-specific config (bot_token, signing_secret, etc.)" }
+                bot_user_id: { type: string, format: uuid }
+            examples:
+              discord:
+                value:
+                  platform: discord
+                  name: "My Discord Server"
+                  config:
+                    application_id: "123456"
+                    bot_token: "Bot xxx"
+                    public_key: "abc123"
+              slack:
+                value:
+                  platform: slack
+                  name: "My Slack Workspace"
+                  config:
+                    bot_token: "xoxb-..."
+                    signing_secret: "abc..."
+              telegram:
+                value:
+                  platform: telegram
+                  name: "My Telegram Bot"
+                  config:
+                    bot_token: "123456:ABCdef"
+      responses:
+        "201":
+          description: Integration registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Integration" }
+
+  /v1/integrations/manage/{id}:
+    patch:
+      tags: [Integrations]
+      summary: Update an integration (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:    { type: string }
+                config:  { type: object }
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Integration" }
+
+    delete:
+      tags: [Integrations]
+      summary: Delete an integration (admin)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+
+  /v1/integrations/discord/webhook:
+    post:
+      tags: [Integrations]
+      summary: Discord interactions endpoint
+      security: []
+      description: |
+        Receives Discord slash command interactions. Verified via Ed25519 signature.
+
+        **Required headers:**
+        - `X-Signature-Ed25519`: signature from Discord
+        - `X-Signature-Timestamp`: timestamp from Discord
+      parameters:
+        - { name: X-Signature-Ed25519,  in: header, required: true, schema: { type: string } }
+        - { name: X-Signature-Timestamp, in: header, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:  { type: integer, description: "1=PING, 2=APPLICATION_COMMAND" }
+                token: { type: string }
+                data:
+                  type: object
+                  properties:
+                    name: { type: string }
+                    options:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:  { type: string }
+                          value: { type: string }
+      responses:
+        "200":
+          description: Interaction response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type: { type: integer, description: "1=PONG, 4=CHANNEL_MESSAGE, 5=DEFERRED" }
+        "401": { description: Invalid signature }
+
+  /v1/integrations/slack/events:
+    post:
+      tags: [Integrations]
+      summary: Slack Events API endpoint
+      security: []
+      description: |
+        Receives Slack events (messages, mentions). Verified via HMAC-SHA256.
+
+        **Required headers:**
+        - `X-Slack-Signature`: HMAC signature
+        - `X-Slack-Request-Timestamp`: Unix timestamp
+      parameters:
+        - { name: X-Slack-Signature,         in: header, required: true, schema: { type: string } }
+        - { name: X-Slack-Request-Timestamp,  in: header, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:      { type: string, enum: [url_verification, event_callback] }
+                challenge: { type: string, description: "Present for url_verification" }
+                event:
+                  type: object
+                  properties:
+                    type:    { type: string }
+                    user:    { type: string }
+                    text:    { type: string }
+                    channel: { type: string }
+      responses:
+        "200":
+          description: OK (or challenge for url_verification)
+        "401": { description: Invalid signature }
+
+  /v1/integrations/telegram/{token}/webhook:
+    post:
+      tags: [Integrations]
+      summary: Telegram bot webhook
+      security: []
+      description: Receives Telegram updates. The bot token in the URL path serves as authentication.
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string }, description: "Telegram bot token" }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                update_id: { type: integer }
+                message:
+                  type: object
+                  properties:
+                    from: { type: object, properties: { id: { type: integer }, username: { type: string } } }
+                    chat: { type: object, properties: { id: { type: integer } } }
+                    text: { type: string }
+      responses:
+        "200": { description: OK }
+        "401": { description: Invalid token }
+
+  /v1/integrations/teams/webhook:
+    post:
+      tags: [Integrations]
+      summary: Microsoft Teams Bot Framework webhook
+      security: []
+      description: Receives Bot Framework Activity objects from Microsoft Teams.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:        { type: string, enum: [message] }
+                text:        { type: string }
+                from:        { type: object }
+                conversation: { type: object }
+                serviceUrl:  { type: string }
+      responses:
+        "200":
+          description: Bot Framework reply Activity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:      { type: string }
+                  text:      { type: string }
+                  replyToId: { type: string }
+
+  /v1/integrations/whatsapp/webhook:
+    get:
+      tags: [Integrations]
+      summary: WhatsApp webhook verification challenge
+      security: []
+      parameters:
+        - { name: "hub.mode",         in: query, schema: { type: string } }
+        - { name: "hub.verify_token", in: query, schema: { type: string } }
+        - { name: "hub.challenge",    in: query, schema: { type: string } }
+      responses:
+        "200": { description: Challenge string }
+        "403": { description: Verification failed }
+
+    post:
+      tags: [Integrations]
+      summary: WhatsApp Cloud API webhook
+      security: []
+      description: Receives WhatsApp message events from Meta Cloud API.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                object: { type: string, enum: [whatsapp_business_account] }
+                entry:  { type: array }
+      responses:
+        "200": { description: EVENT_RECEIVED }
+
+  # ── ADMIN ─────────────────────────────────────────────────────────────────
+
+  /v1/admin/usage:
+    get:
+      tags: [Admin]
+      summary: Usage dashboard data (admin)
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations: { type: object, properties: { total: { type: string }, today: { type: string } } }
+                  tokens:        { type: object, properties: { input: { type: string }, output: { type: string } } }
+                  users:         { type: object, properties: { total: { type: string } } }
+
+  /v1/admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: Query audit logs (admin)
+      parameters:
+        - { name: limit,  in: query, schema: { type: integer, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, default: 0 } }
+        - { name: action, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Audit log entries }
+
+  /v1/admin/dsar:
+    post:
+      tags: [Admin]
+      summary: Data Subject Access Request — GDPR
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:    { type: string, enum: [export, delete] }
+                user_id: { type: string, format: uuid }
+                email:   { type: string, format: email }
+      responses:
+        "202": { description: DSAR accepted and queued }
+
+  /v1/platform/tenants:
+    post:
+      tags: [Platform]
+      summary: Provision a new tenant (super admin)
+      responses:
+        "201": { description: Tenant created }
+    get:
+      tags: [Platform]
+      summary: List all tenants (super admin)
+      responses:
+        "200": { description: Tenant list }
+
+  /health:
+    get:
+      tags: [Platform]
+      summary: Platform health check
+      security: []
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:    { type: string, example: ok }
+                  timestamp: { type: string, format: date-time }

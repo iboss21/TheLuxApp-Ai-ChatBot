@@ -6,6 +6,7 @@ import { toolsRouter } from './tools';
 import { memoryRouter } from './memory';
 import { adminRouter } from './admin';
 import { platformRouter } from './platform';
+import { integrationsRouter } from './integrations';
 
 export function createRouter(): Router {
   const router = Router();
@@ -17,6 +18,7 @@ export function createRouter(): Router {
   router.use('/v1/memory', memoryRouter);
   router.use('/v1/admin', adminRouter);
   router.use('/v1/platform', platformRouter);
+  router.use('/v1/integrations', integrationsRouter);
 
   return router;
 }
