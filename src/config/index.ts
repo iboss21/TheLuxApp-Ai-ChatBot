@@ -29,4 +29,31 @@ export const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '60000', 10),
     max: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
   },
+  // ─── Platform Integration credentials ────────────────────────────────────
+  discord: {
+    publicKey:     process.env.DISCORD_PUBLIC_KEY ?? '',
+    applicationId: process.env.DISCORD_APPLICATION_ID ?? '',
+    botToken:      process.env.DISCORD_BOT_TOKEN ?? '',
+    tenantId:      process.env.DISCORD_TENANT_ID ?? '',
+  },
+  slack: {
+    signingSecret: process.env.SLACK_SIGNING_SECRET ?? '',
+    botToken:      process.env.SLACK_BOT_TOKEN ?? '',
+    tenantId:      process.env.SLACK_TENANT_ID ?? '',
+  },
+  telegram: {
+    botToken:  process.env.TELEGRAM_BOT_TOKEN ?? '',
+    tenantId:  process.env.TELEGRAM_TENANT_ID ?? '',
+  },
+  teams: {
+    appId:       process.env.TEAMS_APP_ID ?? '',
+    appPassword: process.env.TEAMS_APP_PASSWORD ?? '',
+    tenantId:    process.env.TEAMS_TENANT_ID ?? '',
+  },
+  whatsapp: {
+    verifyToken:   process.env.WHATSAPP_VERIFY_TOKEN ?? '',
+    accessToken:   process.env.WHATSAPP_ACCESS_TOKEN ?? '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID ?? '',
+    tenantId:      process.env.WHATSAPP_TENANT_ID ?? '',
+  },
 };

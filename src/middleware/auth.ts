@@ -20,6 +20,8 @@ declare global {
       user?: { id: string; tenantId: string; role: string };
       tenant?: { id: string; slug: string };
       apiKeyId?: string;
+      /** Raw request body buffer — populated for webhook signature verification */
+      rawBody?: Buffer;
     }
   }
 }

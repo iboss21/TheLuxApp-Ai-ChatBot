@@ -1,4 +1,219 @@
 
+<div align="center">
+
+# TheLuxApp — Enterprise AI ChatBot Platform
+
+**Connect GPT-4, Claude & Azure OpenAI to Discord, Slack, Telegram, Teams, WhatsApp, and any website.**
+Multi-tenant · RAG · Tool Execution · Memory · SOC2-ready · Deploy on Coolify in minutes.
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20-green?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL+pgvector-16-blue?logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![License: MIT](https://img.shields.io/badge/License-MIT-gold)](LICENSE)
+
+</div>
+
+---
+
+## 📸 Screenshots
+
+### Hero — Landing Page
+![TheLuxApp Hero](https://github.com/user-attachments/assets/fa20389d-f181-4aa3-82b2-830c0cc6da59)
+
+### Core Features Grid
+![TheLuxApp Features](https://github.com/user-attachments/assets/9a8e237f-707e-41c2-a78c-a29dfbf708f1)
+
+### Platform Integrations
+![TheLuxApp Integrations](https://github.com/user-attachments/assets/01baa965-ee8a-467e-9397-2c1f3b8fa80b)
+
+---
+
+## 🚀 Quick Deploy
+
+### Option 1 — Coolify + Nixpacks (Recommended)
+
+1. **Open Coolify Dashboard** → New Resource → Public Repository
+2. Paste: `https://github.com/iboss21/TheLuxApp-Ai-ChatBot`
+3. Build Pack → **Nixpacks** *(auto-detected from `nixpacks.toml`)*
+4. Port → `3000` · Health check → `/health`
+5. Add environment variables from `.env.example`
+6. **Deploy** 🚀
+
+> Full guide: [`docs/deploy/coolify.md`](docs/deploy/coolify.md)
+
+### Option 2 — Docker Compose
+
+```bash
+git clone https://github.com/iboss21/TheLuxApp-Ai-ChatBot
+cd TheLuxApp-Ai-ChatBot
+cp .env.example .env
+# Add your API keys to .env
+docker compose up -d
+```
+
+> Full guide: [`docs/deploy/docker.md`](docs/deploy/docker.md)
+
+### Option 3 — Nixpacks CLI
+
+```bash
+nixpacks build . --name theluxapp
+nixpacks deploy
+```
+
+---
+
+## 🔌 Platform Integrations
+
+All integrations use a **single shared AI engine** — same knowledge base, memory, and tools across every channel.
+
+| Platform | Webhook URL | Auth Method | Status |
+|----------|-------------|-------------|--------|
+| 🎮 **Discord** | `POST /v1/integrations/discord/webhook` | Ed25519 signature | ✅ Live |
+| 💬 **Slack** | `POST /v1/integrations/slack/events` | HMAC-SHA256 | ✅ Live |
+| ✈️ **Telegram** | `POST /v1/integrations/telegram/:token/webhook` | Token in URL | ✅ Live |
+| 🟦 **MS Teams** | `POST /v1/integrations/teams/webhook` | Bot Framework | ✅ Live |
+| 📱 **WhatsApp** | `POST /v1/integrations/whatsapp/webhook` | Verify token | ✅ Live |
+| 🌐 **Website** | Embed `<script>` tag | API key | ✅ Live |
+| 🔁 **n8n** | Import workflow JSON | API key | ✅ Live |
+| 🔗 **REST API** | `POST /v1/chat/completions` | JWT / API key | ✅ Live |
+
+### Register an integration (Discord example)
+
+```bash
+# 1. Get a JWT
+curl -X POST https://your-domain.com/auth/token \
+  -d '{"grant_type":"password","username":"admin@example.com","password":"secret","tenant_id":"UUID"}'
+
+# 2. Register the Discord integration
+curl -X POST https://your-domain.com/v1/integrations/manage \
+  -H "Authorization: Bearer JWT" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: UUID" \
+  -d '{
+    "platform": "discord",
+    "name": "My Server",
+    "config": {
+      "application_id": "...",
+      "bot_token": "Bot ...",
+      "public_key": "..."
+    }
+  }'
+```
+
+### Website embed — 2 lines of code
+
+```html
+<script
+  src="https://your-domain.com/embed.js"
+  data-api-key="lux_your_api_key"
+  data-tenant-id="your-tenant-uuid"
+  data-title="AI Assistant"
+  data-theme="dark"
+></script>
+```
+
+---
+
+## ⚙️ n8n Automation
+
+Import the pre-built workflow to connect TheLuxApp to 400+ services:
+
+1. Download [`n8n/luxapp-workflow.json`](n8n/luxapp-workflow.json)
+2. In n8n: **Workflows → Import from File**
+3. Set environment variables: `LUXAPP_BASE_URL`, `LUXAPP_API_KEY`, `LUXAPP_TENANT_ID`
+4. Activate the workflow ✓
+
+**Test it:**
+```bash
+curl -X POST https://your-n8n.com/webhook/luxapp-chat \
+  -H 'Content-Type: application/json' \
+  -d '{"platform":"web","userId":"u1","message":"What can you do?"}'
+```
+
+> Full guide: [`docs/integrations/n8n.md`](docs/integrations/n8n.md)
+
+---
+
+## 📖 Integration Developer Guides
+
+| Guide | Description |
+|-------|-------------|
+| [Discord](docs/integrations/discord.md) | Slash commands, Ed25519 verification, invite URL |
+| [Slack](docs/integrations/slack.md) | Events API, OAuth scopes, HMAC verification |
+| [Telegram](docs/integrations/telegram.md) | BotFather, setWebhook, commands, group chat |
+| [MS Teams](docs/integrations/teams.md) | Azure Bot Service, manifest, Bot Framework |
+| [WhatsApp](docs/integrations/whatsapp.md) | Meta Cloud API, Business verification, templates |
+| [Website Embed](docs/integrations/website-embed.md) | Script tag, React/Next.js, CSP, iframe |
+| [n8n](docs/integrations/n8n.md) | Import, extend, platform triggers |
+| [OpenAPI Spec](docs/api/openapi.yaml) | Full OpenAPI 3.0, 40+ endpoints |
+
+---
+
+## 🛠️ Environment Variables
+
+Copy `.env.example` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+```env
+# Core
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+DATABASE_URL=postgresql://user:pass@host:5432/chatbot
+REDIS_URL=redis://host:6379
+JWT_SECRET=your-32-char-secret
+
+# Discord
+DISCORD_PUBLIC_KEY=...
+DISCORD_APPLICATION_ID=...
+DISCORD_BOT_TOKEN=Bot ...
+DISCORD_TENANT_ID=UUID
+
+# Slack
+SLACK_SIGNING_SECRET=...
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_TENANT_ID=UUID
+
+# Telegram
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_TENANT_ID=UUID
+
+# WhatsApp
+WHATSAPP_VERIFY_TOKEN=...
+WHATSAPP_ACCESS_TOKEN=...
+WHATSAPP_PHONE_NUMBER_ID=...
+WHATSAPP_TENANT_ID=UUID
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+CLIENT LAYER
+  Discord │ Slack │ Telegram │ Teams │ WhatsApp │ Web Embed
+
+              ↓   JWT / API Key Auth   ↓
+
+INTEGRATION LAYER  (/v1/integrations/*)
+  Signature Verification → User/Conv Resolution → Message Routing
+
+CORE PLATFORM
+  Orchestrator → Safety → Knowledge (RAG) → Memory
+              ↓
+  Model Router: GPT-4 · Claude · Azure · Local
+
+DATA LAYER
+  PostgreSQL+pgvector · Redis Cache
+  Audit Logs · Integration Maps · Eval Suites
+```
+
+---
+
 # Supreme Enterprise Chatbot Platform
 ## Full Implementation Blueprint — "Everything" Edition
 

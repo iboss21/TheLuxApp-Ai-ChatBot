@@ -1,0 +1,307 @@
+{
+  "name": "TheLuxApp AI ChatBot — Master Workflow",
+  "meta": {
+    "instanceId": "theluxapp-master",
+    "templateId": "theluxapp-v1"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "luxapp-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n1-webhook",
+      "name": "Webhook — Receive Message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "luxapp-chat-main",
+      "notes": "Entry point. POST to /webhook/luxapp-chat with body: { platform, userId, message, conversationId? }"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "platform",       "value": "={{ $json.body.platform ?? 'web' }}",          "type": "string" },
+            { "id": "a2", "name": "userId",          "value": "={{ $json.body.userId ?? 'anonymous' }}",      "type": "string" },
+            { "id": "a3", "name": "message",         "value": "={{ $json.body.message ?? '' }}",              "type": "string" },
+            { "id": "a4", "name": "conversationId",  "value": "={{ $json.body.conversationId ?? '' }}",       "type": "string" },
+            { "id": "a5", "name": "tenantId",        "value": "={{ $json.body.tenantId ?? $env.LUXAPP_TENANT_ID }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "n2-set",
+      "name": "Normalise Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n3-guard",
+      "name": "Guard — Message Not Empty",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.LUXAPP_BASE_URL }}/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type",    "value": "application/json" },
+            { "name": "Authorization",   "value": "=ApiKey {{ $env.LUXAPP_API_KEY }}" },
+            { "name": "X-Tenant-ID",     "value": "={{ $json.tenantId }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messages",           "value": "=[{\"role\":\"user\",\"content\":\"{{ $json.message }}\"}]" },
+            { "name": "stream",             "value": "=false" },
+            { "name": "tools_enabled",      "value": "=true" },
+            { "name": "knowledge_enabled",  "value": "=true" },
+            { "name": "conversation_id",    "value": "={{ $json.conversationId || undefined }}" }
+          ]
+        },
+        "options": {
+          "timeout": 60000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "id": "n4-api",
+      "name": "LuxApp — Chat Completions API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 220],
+      "notes": "Calls POST /v1/chat/completions. Requires LUXAPP_BASE_URL, LUXAPP_API_KEY, LUXAPP_TENANT_ID env vars."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "n5-check",
+      "name": "Check API Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "b1", "name": "reply",           "value": "={{ $json.content }}",          "type": "string" },
+            { "id": "b2", "name": "conversationId",  "value": "={{ $json.conversation_id }}",   "type": "string" },
+            { "id": "b3", "name": "model",           "value": "={{ $json.model }}",             "type": "string" },
+            { "id": "b4", "name": "citations",       "value": "={{ $json.citations }}",         "type": "object" },
+            { "id": "b5", "name": "tokensUsed",      "value": "={{ $json.usage?.output_tokens ?? 0 }}", "type": "number" }
+          ]
+        }
+      },
+      "id": "n6-format",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 140]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "e1", "name": "reply",  "value": "Sorry, I encountered an error. Please try again.", "type": "string" },
+            { "id": "e2", "name": "error",  "value": "={{ $json.error?.message ?? 'Unknown error' }}", "type": "string" }
+          ]
+        }
+      },
+      "id": "n7-error-format",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 340]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "g1", "name": "reply",  "value": "Please provide a message to continue.", "type": "string" }
+          ]
+        }
+      },
+      "id": "n8-guard-resp",
+      "name": "Empty Message Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { reply: $json.reply, conversationId: $json.conversationId, model: $json.model, citations: $json.citations, error: $json.error } }}"
+      },
+      "id": "n9-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1560, 300]
+    },
+
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 1 }]
+        }
+      },
+      "id": "n10-schedule",
+      "name": "Schedule — Hourly Health Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 600]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.LUXAPP_BASE_URL }}/health",
+        "options": { "timeout": 5000 }
+      },
+      "id": "n11-health",
+      "name": "Health Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "h1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ok",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "n12-health-check",
+      "name": "Health OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log health check pass\nconsole.log('[LuxApp] Health check passed at', new Date().toISOString());\nreturn items;"
+      },
+      "id": "n13-log-ok",
+      "name": "Log — Healthy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 540]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Alert on health check failure\nconst msg = `[LuxApp] ⚠️ Health check FAILED at ${new Date().toISOString()}`;\nconsole.error(msg);\n// TODO: Send Slack/email alert here\nreturn items;"
+      },
+      "id": "n14-log-fail",
+      "name": "Log — Unhealthy (Alert)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 660]
+    },
+
+    {
+      "parameters": {
+        "content": "## TheLuxApp AI ChatBot\n\n**Required Environment Variables:**\n- `LUXAPP_BASE_URL` — e.g. `https://chat.yourdomain.com`\n- `LUXAPP_API_KEY` — API key from `/auth/api-keys`\n- `LUXAPP_TENANT_ID` — your tenant UUID\n\n**Webhook URL:** `https://your-n8n.com/webhook/luxapp-chat`\n\n**Test with:**\n```bash\ncurl -X POST https://your-n8n.com/webhook/luxapp-chat \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"platform\":\"web\",\"userId\":\"u123\",\"message\":\"Hello!\"}'\n```",
+        "height": 280,
+        "width": 400
+      },
+      "id": "n15-note",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 760]
+    }
+  ],
+  "connections": {
+    "Webhook — Receive Message": {
+      "main": [[{ "node": "Normalise Input", "type": "main", "index": 0 }]]
+    },
+    "Normalise Input": {
+      "main": [[{ "node": "Guard — Message Not Empty", "type": "main", "index": 0 }]]
+    },
+    "Guard — Message Not Empty": {
+      "main": [
+        [{ "node": "LuxApp — Chat Completions API", "type": "main", "index": 0 }],
+        [{ "node": "Empty Message Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "LuxApp — Chat Completions API": {
+      "main": [[{ "node": "Check API Response", "type": "main", "index": 0 }]]
+    },
+    "Check API Response": {
+      "main": [
+        [{ "node": "Format Success Response", "type": "main", "index": 0 }],
+        [{ "node": "Format Error Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Success Response": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Format Error Response": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Empty Message Response": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    },
+    "Schedule — Hourly Health Check": {
+      "main": [[{ "node": "Health Check", "type": "main", "index": 0 }]]
+    },
+    "Health Check": {
+      "main": [[{ "node": "Health OK?", "type": "main", "index": 0 }]]
+    },
+    "Health OK?": {
+      "main": [
+        [{ "node": "Log — Healthy", "type": "main", "index": 0 }],
+        [{ "node": "Log — Unhealthy (Alert)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "",
+    "timezone": "UTC"
+  },
+  "versionId": "1.0.0",
+  "id": "theluxapp-master-workflow"
+}

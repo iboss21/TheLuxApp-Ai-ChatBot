@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheLuxApp — Enterprise AI ChatBot Platform</title>
+  <meta name="description" content="The enterprise AI chatbot platform. Connect GPT-4, Claude & more to Discord, Slack, Telegram, Teams, WhatsApp and any website. Deploy on Coolify in minutes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black:    #080808;
+      --black-2:  #0e0e0e;
+      --black-3:  #141414;
+      --gold:     #c9a96e;
+      --gold-2:   #e8c87a;
+      --gold-3:   #f5dfa0;
+      --white:    #ffffff;
+      --gray-1:   #888888;
+      --gray-2:   #555555;
+      --border:   rgba(201,169,110,0.15);
+      --border-2: rgba(255,255,255,0.06);
+      --glass:    rgba(255,255,255,0.02);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NOISE TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5vw; height: 64px;
+      border-bottom: 1px solid var(--border-2);
+      background: rgba(8,8,8,0.85);
+      backdrop-filter: blur(20px);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em;
+      text-decoration: none; color: var(--white);
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 900;
+    }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--gray-1); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--white); }
+    .nav-cta {
+      background: var(--gold); color: var(--black);
+      padding: 8px 20px; border-radius: 6px; font-weight: 700;
+      font-size: 0.875rem; text-decoration: none; transition: all .2s;
+    }
+    .nav-cta:hover { background: var(--gold-2); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 100px 5vw 60px;
+      position: relative; text-align: center; overflow: hidden;
+    }
+    .hero-orb {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      filter: blur(80px); opacity: 0.12;
+    }
+    .hero-orb-1 { width: 600px; height: 600px; background: var(--gold); top: -200px; left: -100px; animation: float 8s ease-in-out infinite; }
+    .hero-orb-2 { width: 400px; height: 400px; background: #8b5cf6; bottom: -100px; right: -50px; animation: float 10s ease-in-out infinite reverse; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(201,169,110,0.1); border: 1px solid var(--border);
+      color: var(--gold); padding: 6px 16px; border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; margin-bottom: 32px;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .hero-badge::before { content: '●'; font-size: 0.5rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 6rem);
+      font-weight: 900; line-height: 1.05; letter-spacing: -0.04em;
+      margin-bottom: 24px; position: relative;
+    }
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-3) 50%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-size: 200% auto; animation: shimmer 4s linear infinite;
+    }
+    @keyframes shimmer { to { background-position: 200% center; } }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem); color: var(--gray-1);
+      max-width: 600px; line-height: 1.7; margin-bottom: 40px; font-weight: 400;
+    }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 64px; }
+    .btn-primary {
+      background: var(--gold); color: var(--black);
+      padding: 14px 32px; border-radius: 8px; font-weight: 700;
+      font-size: 0.95rem; text-decoration: none; transition: all .25s;
+      border: none; cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--gold-2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,169,110,0.3); }
+    .btn-secondary {
+      background: transparent; color: var(--white);
+      padding: 14px 32px; border-radius: 8px; font-weight: 600;
+      font-size: 0.95rem; text-decoration: none; transition: all .25s;
+      border: 1px solid var(--border-2);
+    }
+    .btn-secondary:hover { background: var(--glass); border-color: var(--border); }
+
+    .hero-stats {
+      display: flex; gap: 48px; flex-wrap: wrap; justify-content: center;
+      padding-top: 32px; border-top: 1px solid var(--border-2);
+    }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gold); display: block; }
+    .stat-label { font-size: 0.8rem; color: var(--gray-1); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── SECTION COMMON ── */
+    section { padding: 100px 5vw; position: relative; }
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800;
+      letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub { font-size: 1.05rem; color: var(--gray-1); max-width: 520px; line-height: 1.7; }
+
+    /* ── FEATURES ── */
+    .features { background: var(--black-2); }
+    .features-header { text-align: center; margin-bottom: 64px; }
+    .features-header .section-sub { margin: 0 auto; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;
+      max-width: 1100px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--glass); border: 1px solid var(--border-2);
+      border-radius: 16px; padding: 32px; transition: all .3s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(201,169,110,0.05) 0%, transparent 60%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .feature-card:hover { border-color: var(--border); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(201,169,110,0.1); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; margin-bottom: 20px;
+    }
+    .feature-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-desc { font-size: 0.875rem; color: var(--gray-1); line-height: 1.65; }
+
+    /* ── INTEGRATIONS ── */
+    .integrations-header { text-align: center; margin-bottom: 64px; }
+    .integrations-header .section-sub { margin: 0 auto; }
+    .platform-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 20px; max-width: 900px; margin: 0 auto 64px;
+    }
+    .platform-card {
+      background: var(--glass); border: 1px solid var(--border-2);
+      border-radius: 14px; padding: 28px 20px; text-align: center;
+      transition: all .25s; cursor: default;
+    }
+    .platform-card:hover { border-color: var(--border); background: rgba(201,169,110,0.04); transform: translateY(-3px); }
+    .platform-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
+    .platform-name { font-size: 0.875rem; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+    .platform-status {
+      font-size: 0.7rem; font-weight: 600; padding: 2px 10px;
+      border-radius: 100px; display: inline-block;
+    }
+    .status-live { background: rgba(34,197,94,0.15); color: #4ade80; }
+    .status-soon { background: rgba(201,169,110,0.12); color: var(--gold); }
+
+    /* ── ARCHITECTURE DIAGRAM ── */
+    .arch { background: var(--black-3); }
+    .arch-inner { max-width: 900px; margin: 0 auto; }
+    .arch-diagram {
+      background: var(--black-2); border: 1px solid var(--border-2);
+      border-radius: 16px; padding: 40px; margin-top: 40px; overflow-x: auto;
+    }
+    .arch-diagram pre {
+      font-family: 'Courier New', monospace; font-size: 0.78rem;
+      color: #888; line-height: 1.6; white-space: pre;
+    }
+    .arch-diagram pre .hl { color: var(--gold); }
+
+    /* ── DEPLOY ── */
+    .deploy-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px; max-width: 1000px; margin: 48px auto 0;
+    }
+    .deploy-card {
+      background: var(--glass); border: 1px solid var(--border-2);
+      border-radius: 16px; padding: 32px; transition: border-color .3s;
+    }
+    .deploy-card.featured { border-color: var(--border); background: rgba(201,169,110,0.03); }
+    .deploy-card-label {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--gold); margin-bottom: 12px;
+    }
+    .deploy-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
+    .deploy-card p { font-size: 0.875rem; color: var(--gray-1); line-height: 1.65; margin-bottom: 20px; }
+    .code-block {
+      background: #0a0a0a; border: 1px solid var(--border-2);
+      border-radius: 10px; padding: 20px; font-family: 'Courier New', monospace;
+      font-size: 0.8rem; color: #a0a0a0; overflow-x: auto; line-height: 1.6;
+    }
+    .code-block .cmd { color: var(--gold-3); }
+    .code-block .cmt { color: var(--gray-2); }
+    .code-block .val { color: #7dd3fc; }
+
+    /* ── N8N ── */
+    .n8n { background: var(--black-2); }
+    .n8n-inner {
+      max-width: 900px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    .n8n-flow {
+      background: var(--black-3); border: 1px solid var(--border-2);
+      border-radius: 16px; padding: 28px; font-size: 0.8rem;
+    }
+    .flow-node {
+      background: var(--glass); border: 1px solid var(--border-2);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 10px; font-weight: 500;
+    }
+    .flow-node.active { border-color: var(--border); color: var(--gold); }
+    .flow-arrow { text-align: center; color: var(--gray-2); margin: 4px 0; font-size: 1rem; }
+    .n8n-actions { margin-top: 24px; }
+
+    /* ── DOCS PREVIEW ── */
+    .docs-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px; max-width: 1000px; margin: 48px auto 0;
+    }
+    .doc-card {
+      background: var(--glass); border: 1px solid var(--border-2);
+      border-radius: 12px; padding: 24px; text-decoration: none;
+      transition: all .25s;
+    }
+    .doc-card:hover { border-color: var(--border); transform: translateY(-2px); }
+    .doc-card-icon { font-size: 1.5rem; margin-bottom: 12px; }
+    .doc-card-title { font-size: 0.95rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .doc-card-desc { font-size: 0.8rem; color: var(--gray-1); line-height: 1.6; }
+
+    /* ── CTA BANNER ── */
+    .cta-section {
+      background: var(--black-3); text-align: center;
+      border-top: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2);
+    }
+    .cta-title {
+      font-size: clamp(1.8rem, 4vw, 3.2rem); font-weight: 900;
+      letter-spacing: -0.04em; margin-bottom: 16px;
+    }
+    .cta-sub { font-size: 1.05rem; color: var(--gray-1); margin-bottom: 40px; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 60px 5vw 40px; background: var(--black);
+      border-top: 1px solid var(--border-2);
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+    }
+    .footer-brand p { font-size: 0.875rem; color: var(--gray-1); line-height: 1.7; margin-top: 12px; max-width: 260px; }
+    .footer-col h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-2); margin-bottom: 16px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul a { font-size: 0.875rem; color: var(--gray-1); text-decoration: none; transition: color .2s; }
+    .footer-col ul a:hover { color: var(--white); }
+    .footer-bottom {
+      max-width: 1100px; margin: 48px auto 0;
+      padding-top: 24px; border-top: 1px solid var(--border-2);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p { font-size: 0.8rem; color: var(--gray-2); }
+    .footer-bottom a { color: var(--gold); text-decoration: none; }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: all 0.6s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .n8n-inner { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .footer-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ────────────────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="/">
+    <div class="nav-logo-icon">L</div>
+    TheLux<span>App</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#integrations">Integrations</a></li>
+    <li><a href="#deploy">Deploy</a></li>
+    <li><a href="#n8n">n8n</a></li>
+    <li><a href="docs/integrations/discord.html">Docs</a></li>
+  </ul>
+  <a class="nav-cta" href="#deploy">Deploy Free →</a>
+</nav>
+
+<!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+
+  <div class="hero-badge">Enterprise-Grade · Production-Ready · Open Source</div>
+
+  <h1>
+    The <span class="accent">AI ChatBot</span><br />
+    Platform Built<br />
+    for Enterprise
+  </h1>
+
+  <p class="hero-sub">
+    Connect GPT-4, Claude &amp; Azure OpenAI to Discord, Slack, Telegram,
+    Microsoft Teams, WhatsApp, and any website — with RAG, tools, memory,
+    and compliance built-in.
+  </p>
+
+  <div class="hero-actions">
+    <a class="btn-primary" href="#deploy">Deploy on Coolify →</a>
+    <a class="btn-secondary" href="#integrations">See Integrations</a>
+    <a class="btn-secondary" href="docs/api/openapi.yaml" target="_blank">API Docs</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-value" data-target="7">0</span>
+      <span class="stat-label">Platform Integrations</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="30" data-suffix="+">0</span>
+      <span class="stat-label">Knowledge Connectors</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="3">0</span>
+      <span class="stat-label">AI Providers</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" data-target="100" data-suffix="%">0</span>
+      <span class="stat-label">Open Source</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ──────────────────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="features-header reveal">
+    <div class="section-label">Core Engine</div>
+    <h2 class="section-title">Everything an enterprise needs</h2>
+    <p class="section-sub">From RAG knowledge retrieval to tool execution, memory, safety, and SOC2-ready compliance.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-title">Multi-Model AI Router</div>
+      <div class="feature-desc">Route requests to GPT-4, Claude 3, Azure OpenAI, or local models. Automatic fallback chains, cost-aware routing, and latency optimisation.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">📚</div>
+      <div class="feature-title">RAG Knowledge Base</div>
+      <div class="feature-desc">Ingest documents from Confluence, SharePoint, Google Drive, Notion, GitHub and 25+ more. pgvector semantic search with citations.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">⚙️</div>
+      <div class="feature-title">Tool &amp; Action Execution</div>
+      <div class="feature-desc">Let the AI create Jira tickets, look up Salesforce contacts, post to Slack, query databases and run custom HTTP tools — safely.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🧬</div>
+      <div class="feature-title">Persistent Memory</div>
+      <div class="feature-desc">User preferences, recurring tasks and context are remembered across sessions. Consent-aware with full GDPR erasure support.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🛡️</div>
+      <div class="feature-title">Safety &amp; Compliance</div>
+      <div class="feature-desc">Prompt injection detection, PII redaction, DLP scanning, topic filtering. Audit logs for SOC2, HIPAA, GDPR, and FedRAMP.</div>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Analytics &amp; Governance</div>
+      <div class="feature-desc">Token usage, cost tracking, conversation analytics, red-team eval suites, and golden-set regression testing built-in.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── INTEGRATIONS ───────────────────────────────────────────────────────── -->
+<section id="integrations">
+  <div class="integrations-header reveal">
+    <div class="section-label">Platform Integrations</div>
+    <h2 class="section-title">Connect everywhere your users are</h2>
+    <p class="section-sub">One API, every channel. Deploy the same intelligent chatbot across all your platforms simultaneously.</p>
+  </div>
+  <div class="platform-grid">
+    <div class="platform-card reveal">
+      <span class="platform-icon">🎮</span>
+      <div class="platform-name">Discord</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">💬</span>
+      <div class="platform-name">Slack</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">✈️</span>
+      <div class="platform-name">Telegram</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">🟦</span>
+      <div class="platform-name">MS Teams</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">📱</span>
+      <div class="platform-name">WhatsApp</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">🌐</span>
+      <div class="platform-name">Website Embed</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">🔁</span>
+      <div class="platform-name">n8n</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+    <div class="platform-card reveal">
+      <span class="platform-icon">🔗</span>
+      <div class="platform-name">REST API</div>
+      <span class="platform-status status-live">Live</span>
+    </div>
+  </div>
+
+  <!-- EMBED CODE SNIPPET -->
+  <div style="max-width:680px;margin:0 auto;" class="reveal">
+    <p class="section-label" style="text-align:center;margin-bottom:16px;">Website Embed — 2 lines of code</p>
+    <div class="code-block">
+      <span class="cmt">&lt;!-- Paste before &lt;/body&gt; on any page --&gt;</span><br />
+      &lt;<span class="cmd">script</span><br />
+      &nbsp;&nbsp;src=<span class="val">"https://your-domain.com/embed.js"</span><br />
+      &nbsp;&nbsp;data-api-key=<span class="val">"lux_your_api_key"</span><br />
+      &nbsp;&nbsp;data-tenant-id=<span class="val">"your-tenant-uuid"</span><br />
+      &nbsp;&nbsp;data-title=<span class="val">"AI Assistant"</span><br />
+      &gt;&lt;/<span class="cmd">script</span>&gt;
+    </div>
+  </div>
+</section>
+
+<!-- ── ARCHITECTURE ───────────────────────────────────────────────────────── -->
+<section class="arch" id="architecture">
+  <div class="arch-inner">
+    <div class="reveal">
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">Built for scale from day one</h2>
+      <p class="section-sub">Multi-tenant SaaS, VPC, or on-prem. PostgreSQL + pgvector, Redis, and a pluggable model router.</p>
+    </div>
+    <div class="arch-diagram reveal">
+<pre>
+<span class="hl">CLIENT LAYER</span>
+  Discord │ Slack │ Telegram │ Teams │ WhatsApp │ Web
+
+              ↓   JWT / API Key Auth   ↓
+
+<span class="hl">CORE PLATFORM</span>
+  Orchestrator → Safety → Knowledge (RAG) → Memory
+              ↓
+  Model Router: <span class="hl">GPT-4</span> · Claude · Azure · Local
+
+              ↓
+
+<span class="hl">DATA LAYER</span>
+  PostgreSQL+pgvector · Redis Cache · Object Store
+  Audit Logs · Eval Suites · Integration Maps
+</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEPLOY ─────────────────────────────────────────────────────────────── -->
+<section id="deploy">
+  <div style="text-align:center;margin-bottom:64px;" class="reveal">
+    <div class="section-label">Deployment</div>
+    <h2 class="section-title">Three ways to deploy</h2>
+    <p class="section-sub" style="margin:0 auto;">Choose Docker Compose for local dev, Coolify for one-click cloud, or Advanced for full Kubernetes.</p>
+  </div>
+  <div class="deploy-grid">
+    <!-- Docker -->
+    <div class="deploy-card reveal">
+      <div class="deploy-card-label">Option 1</div>
+      <h3>🐳 Docker Compose</h3>
+      <p>Spin up the full stack locally or on any server in under two minutes.</p>
+      <div class="code-block">
+        <span class="cmt"># Clone &amp; configure</span><br />
+        <span class="cmd">git clone</span> https://github.com/iboss21/TheLuxApp-Ai-ChatBot<br />
+        <span class="cmd">cp</span> .env.example .env<br />
+        <span class="cmt"># Add your API keys, then:</span><br />
+        <span class="cmd">docker compose up -d</span>
+      </div>
+    </div>
+    <!-- Coolify Nixpacks -->
+    <div class="deploy-card featured reveal">
+      <div class="deploy-card-label">✦ Recommended · Option 2</div>
+      <h3>🚀 Coolify + Nixpacks</h3>
+      <p>Zero-config cloud deploy with automatic SSL, env management, and rolling updates.</p>
+      <div class="code-block">
+        <span class="cmt"># Coolify Dashboard</span><br />
+        <span class="val">1.</span> New Resource → Public Repository<br />
+        <span class="val">2.</span> Paste repo URL<br />
+        <span class="val">3.</span> Build Pack → <span class="cmd">Nixpacks</span><br />
+        <span class="val">4.</span> Add env vars from .env.example<br />
+        <span class="val">5.</span> Deploy ✓
+      </div>
+    </div>
+    <!-- Advanced -->
+    <div class="deploy-card reveal">
+      <div class="deploy-card-label">Option 3</div>
+      <h3>⚙️ Advanced / Kubernetes</h3>
+      <p>Full production: Helm chart, horizontal autoscaling, multi-region, and custom networking.</p>
+      <div class="code-block">
+        <span class="cmt"># Dockerfile included</span><br />
+        <span class="cmd">docker build</span> -t theluxapp .<br />
+        <span class="cmt"># Or use Nixpacks directly</span><br />
+        <span class="cmd">nixpacks build</span> . --name theluxapp<br />
+        <span class="cmd">nixpacks deploy</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── N8N ────────────────────────────────────────────────────────────────── -->
+<section class="n8n" id="n8n">
+  <div class="n8n-inner">
+    <div class="reveal">
+      <div class="section-label">Automation</div>
+      <h2 class="section-title">Automate with n8n</h2>
+      <p class="section-sub">Import our pre-built workflow JSON to connect the chatbot to any of your existing n8n automations in seconds.</p>
+      <div class="n8n-actions">
+        <a class="btn-primary" href="n8n/luxapp-workflow.json" download>⬇ Download Workflow JSON</a>
+        &nbsp;&nbsp;
+        <a class="btn-secondary" href="docs/integrations/n8n.html">View Docs</a>
+      </div>
+    </div>
+    <div class="n8n-flow reveal">
+      <div class="flow-node active">🔗 Webhook Trigger</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node active">🔀 Platform Router</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node active">🔑 Set API Key Header</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node active">🤖 LuxApp Chat API</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node active">✅ Format &amp; Respond</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DOCS ───────────────────────────────────────────────────────────────── -->
+<section id="docs">
+  <div style="text-align:center;margin-bottom:0;" class="reveal">
+    <div class="section-label">Developer Docs</div>
+    <h2 class="section-title">Comprehensive integration guides</h2>
+    <p class="section-sub" style="margin:0 auto;">Step-by-step setup guides for every platform with code examples, webhook URLs, and troubleshooting.</p>
+  </div>
+  <div class="docs-grid">
+    <a class="doc-card reveal" href="docs/integrations/discord.html">
+      <div class="doc-card-icon">🎮</div>
+      <div class="doc-card-title">Discord Bot</div>
+      <div class="doc-card-desc">Slash commands, signature verification, slash command registration, and multi-server support.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/slack.html">
+      <div class="doc-card-icon">💬</div>
+      <div class="doc-card-title">Slack App</div>
+      <div class="doc-card-desc">Events API setup, OAuth, HMAC verification, and bot message threading.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/telegram.html">
+      <div class="doc-card-icon">✈️</div>
+      <div class="doc-card-title">Telegram Bot</div>
+      <div class="doc-card-desc">BotFather setup, webhook registration, commands, and group chat support.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/teams.html">
+      <div class="doc-card-icon">🟦</div>
+      <div class="doc-card-title">Microsoft Teams</div>
+      <div class="doc-card-desc">Azure Bot Service, Bot Framework manifest, and Teams app packaging.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/whatsapp.html">
+      <div class="doc-card-icon">📱</div>
+      <div class="doc-card-title">WhatsApp Business</div>
+      <div class="doc-card-desc">Meta Cloud API, webhook challenge, phone number setup, and template messages.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/website-embed.html">
+      <div class="doc-card-icon">🌐</div>
+      <div class="doc-card-title">Website Embed</div>
+      <div class="doc-card-desc">One-line embed script, theming, streaming responses, and custom branding.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/integrations/n8n.html">
+      <div class="doc-card-icon">🔁</div>
+      <div class="doc-card-title">n8n Automation</div>
+      <div class="doc-card-desc">Import the pre-built workflow, configure triggers, and chain with 400+ n8n nodes.</div>
+    </a>
+    <a class="doc-card reveal" href="docs/api/openapi.yaml" target="_blank">
+      <div class="doc-card-icon">📋</div>
+      <div class="doc-card-title">OpenAPI Spec</div>
+      <div class="doc-card-desc">Full OpenAPI 3.0 spec — all 40+ endpoints documented with request/response schemas.</div>
+    </a>
+  </div>
+</section>
+
+<!-- ── CTA BANNER ─────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="reveal">
+    <h2 class="cta-title">Ready to deploy your<br /><span style="color:var(--gold)">enterprise AI chatbot?</span></h2>
+    <p class="cta-sub">Open source. Self-hosted. No usage fees. Deploy in under 5 minutes.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="https://github.com/iboss21/TheLuxApp-Ai-ChatBot" target="_blank">⭐ Star on GitHub</a>
+      <a class="btn-secondary" href="#deploy">View Deploy Options</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a class="nav-logo" href="/" style="margin-bottom:0">
+        <div class="nav-logo-icon">L</div>
+        TheLux<span>App</span>
+      </a>
+      <p>Enterprise AI chatbot platform. Multi-tenant, SOC2-ready, and deployable anywhere.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Integrations</h4>
+      <ul>
+        <li><a href="docs/integrations/discord.html">Discord</a></li>
+        <li><a href="docs/integrations/slack.html">Slack</a></li>
+        <li><a href="docs/integrations/telegram.html">Telegram</a></li>
+        <li><a href="docs/integrations/teams.html">MS Teams</a></li>
+        <li><a href="docs/integrations/whatsapp.html">WhatsApp</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Deploy</h4>
+      <ul>
+        <li><a href="docs/deploy/coolify.html">Coolify</a></li>
+        <li><a href="docs/deploy/docker.html">Docker</a></li>
+        <li><a href="docs/integrations/n8n.html">n8n</a></li>
+        <li><a href="docs/api/openapi.yaml">API Spec</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Project</h4>
+      <ul>
+        <li><a href="https://github.com/iboss21/TheLuxApp-Ai-ChatBot" target="_blank">GitHub</a></li>
+        <li><a href="https://github.com/iboss21/TheLuxApp-Ai-ChatBot/issues" target="_blank">Issues</a></li>
+        <li><a href="https://github.com/iboss21/TheLuxApp-Ai-ChatBot/blob/main/LICENSE" target="_blank">License</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 TheLuxApp. Open source under MIT License.</p>
+    <p>Built with ❤️ · <a href="https://github.com/iboss21/TheLuxApp-Ai-ChatBot" target="_blank">GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll Reveal ────────────────────────────────────────────────────────
+  const observer = new IntersectionObserver(
+    (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+  );
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── Stat Counter Animation ────────────────────────────────────────────────
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = parseInt(el.getAttribute('data-target') || '0', 10);
+      const suffix = el.getAttribute('data-suffix') || '';
+      let current = 0;
+      const step = target / 40;
+      const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = Math.round(current) + suffix;
+        if (current >= target) clearInterval(timer);
+      }, 30);
+      counterObserver.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+  // ── Particle canvas in hero ───────────────────────────────────────────────
+  (function() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.4';
+    hero.insertBefore(canvas, hero.firstChild);
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+    function resize() {
+      W = canvas.width = hero.offsetWidth;
+      H = canvas.height = hero.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.5 + 0.3,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        alpha: Math.random() * 0.5 + 0.1,
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(201,169,110,${p.alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
+</script>
+</body>
+</html>
