@@ -163,7 +163,7 @@ export class ToolService {
 
     await query(
       'UPDATE tool_executions SET status = $1, confirmed_by = $2 WHERE id = $3',
-      ['confirmed', confirmedBy, execId]
+      ['executing', confirmedBy, execId]
     );
 
     const tool = await this.getTool(tenantId, exec.tool_id);

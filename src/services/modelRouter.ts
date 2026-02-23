@@ -163,7 +163,6 @@ export class ModelRouter {
       const delta = chunk.choices[0]?.delta;
       if (delta?.content) {
         res.write(`data: ${JSON.stringify({ type: 'token', content: delta.content })}\n\n`);
-        outputTokens++;
       }
       if (chunk.usage) {
         inputTokens = chunk.usage.prompt_tokens;
