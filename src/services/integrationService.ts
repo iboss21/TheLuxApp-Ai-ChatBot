@@ -48,7 +48,7 @@ export class IntegrationService {
     rawBody: string,
   ): boolean {
     try {
-      const verify = crypto.createVerify('ed25519');
+      const verify = crypto.createVerify('ED25519');
       verify.update(Buffer.from(timestamp + rawBody));
       return verify.verify(
         Buffer.from(publicKey, 'hex'),

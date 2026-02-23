@@ -323,10 +323,23 @@ integrationsRouter.post(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activity = req.body as any;
 
-    // Verify the request comes from our registered Teams app
+    // Verify the request comes from a legitimate Bot Framework service URL
+    // Use proper URL parsing to avoid substring-match bypass attacks
     const serviceUrl = activity?.serviceUrl as string | undefined;
-    if (!serviceUrl?.includes('botframework.com') && !serviceUrl?.includes('azure.com')) {
-      res.status(401).json({ error: 'Unrecognised service URL' });
+    if (!serviceUrl) {
+      res.status(401).json({ error: 'Missing serviceUrl' });
+      return;
+    }
+    try {
+      const host = new URL(serviceUrl).hostname;
+      const allowed = ['botframework.com', 'azure.com'];
+      const trusted = allowed.some((d) => host === d || host.endsWith(`.${d}`));
+      if (!trusted) {
+        res.status(401).json({ error: 'Unrecognized service URL' });
+        return;
+      }
+    } catch {
+      res.status(401).json({ error: 'Invalid serviceUrl' });
       return;
     }
 

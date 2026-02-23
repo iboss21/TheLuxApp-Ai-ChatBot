@@ -12,7 +12,22 @@ import { logger } from './utils/logger';
 export function createApp(): express.Application {
   const app = express();
 
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:  ["'self'"],
+        // Landing page has inline styles/scripts; API consumers use their own CSP
+        scriptSrc:   ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+        styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+        fontSrc:     ["'self'", 'fonts.gstatic.com'],
+        imgSrc:      ["'self'", 'data:'],
+        connectSrc:  ["'self'"],
+        frameSrc:    ["'none'"],
+        objectSrc:   ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+  }));
   app.use(cors({ origin: config.corsOrigin }));
 
   // Capture raw body for webhook signature verification (Discord, Slack, WhatsApp)
